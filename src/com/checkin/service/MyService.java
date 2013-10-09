@@ -8,15 +8,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.Looper;
 import android.os.Message;
+import android.os.PowerManager;
+import android.os.PowerManager.WakeLock;
 import android.util.Log;
 
 import com.checkin.MainActivity;
 import com.checkin.R;
 import com.checkin.utils.PreferGeter;
 import com.checkin.utils.SocketUtil;
-import com.checkin.utils.WifiAdmin.WifiCipherType;
 
 /**
  * 后台发送签到信息主服务， 判断是否能与服务器连接并发送消息
@@ -28,13 +28,14 @@ public class MyService extends Service {
 
 	static int intCounter;
 	static boolean runFlag = true;
-	static final int DELAY = 30 * 1000; // 刷新频率2分钟
+	static final int DELAY = 2 * 60 * 1000; // 刷新频率2分钟
 	static int noSignCounter;
 	final String UPDATE_ACTION = "com.checkin.updateui";// 更新前台UI
 	String tag = "MyService";
 	public static boolean isCheck = false;
 	ScanTask task;
 	Intent in;
+	WakeLock wakeLock;
 
 	// 接受网络检测信号返回值并更新UI线程
 	Handler hd = new Handler() {
@@ -69,7 +70,8 @@ public class MyService extends Service {
 
 		super.onCreate();
 		Log.i(tag, "onCreate()启动服务");
-
+		Notification notification = new Notification(R.drawable.ic_launcher, "hehe",System.currentTimeMillis());
+		startForeground(1, notification);
 		task = new ScanTask(this);
 		task.start();
 
@@ -83,6 +85,10 @@ public class MyService extends Service {
 		Log.i(tag, "onStart");
 		noSignCounter = intCounter = 0;
 		runFlag = true;
+		 //电源管理
+        PowerManager pm = (PowerManager) this.getSystemService(Context.POWER_SERVICE);
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,"com.task.TalkMessageService");
+        wakeLock.acquire();
 
 	}
 
@@ -224,7 +230,7 @@ public class MyService extends Service {
 				contentIntent);
 
 		// 用mNotificationManager的notify方法通知用户生成标题栏消息通知
-		mNotificationManager.notify(1, notification);
+		mNotificationManager.notify(1, notification);	
 
 	}
 
